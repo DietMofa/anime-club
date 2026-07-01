@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifica Profilo - Anime Club</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .profile-container { 
+            background: var(--bg-panel); 
+            padding: 40px; 
+            border-radius: 10px; 
+            border: 1px solid var(--neon-purple); 
+            box-shadow: 0 0 20px var(--neon-purple); 
+            text-align: center; 
+            width: 100%; 
+            max-width: 450px; 
+        }
+        .current-pfp { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--neon-cyan); object-fit: cover; margin-bottom: 20px; }
+    </style>
+</head>
+<body class="dark-theme">
+    <div class="profile-container">
+        <h1 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan);">IL TUO PROFILO</h1>
+        <p>User: <strong><%= user.username %></strong></p>
+        
+        <img src="<%= user.avatar_url %>" alt="Avatar Corrente" class="current-pfp">
+
+        <form action="/profile/update" method="POST">
+            <label style="display:block; text-align:left; margin-bottom:5px;">Incolla l'URL della nuova immagine profilo:</label>
+            <input type="url" name="avatar_url" value="<%= user.avatar_url %>" required placeholder="https://link-immagine.com/foto.jpg">
+            
+            <button type="submit" class="btn btn-success" style="margin-top:15px;">Salva Modifiche</button>
+        </form>
+        
+        <p style="margin-top: 20px;">
+            <a href="/dashboard" style="color: var(--neon-pink); text-decoration: none;">← Torna alla Dashboard</a>
+        </p>
+    </div>
+</body>
+</html>
