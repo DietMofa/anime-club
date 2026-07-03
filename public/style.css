@@ -269,6 +269,17 @@ input, select {
     font-size: 1.5rem;
 }
 
+/* Ottimizzazione Mobile */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr; /* Una sola colonna */
+        gap: 10px;
+    }
+    .header-content { flex-direction: column; text-align: center; }
+    .panel, .main-content { margin-bottom: 20px; }
+    .anime-poster { width: 100%; height: auto; }
+}
+
 .star {
     color: var(--neon-pink);
 }
