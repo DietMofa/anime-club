@@ -6,171 +6,199 @@
     <title>Anime Night Club - Dashboard</title>
     <link rel="stylesheet" href="/style.css">
 </head>
-<body class="dark-theme">
-    <header>
-        <div class="header-content">
-            <div class="logo">
-                <span class="jp-text">アニメ</span>
-                <span class="en-text">ANIME NIGHT CLUB</span>
-                <span class="jp-text">夜夜</span>
-            </div>
-            <div class="user-status">
-                <a href="/profile" style="color: var(--neon-cyan); text-decoration:none; font-weight:600; margin-right:15px;">👤 Modifica Profilo</a>
-                <img src="<%= avatarUrl %>" alt="User Avatar" class="header-avatar">
-                <a href="/logout" class="btn-logout" style="margin-left: 15px;">Logout</a>
-            </div>
+<body>
+    <header class="top-nav">
+        <div class="logo-area">
+            <h1><span class="kanji">アニメ</span> ANIME NIGHT CLUB <span class="kanji">夜夜</span></h1>
+        </div>
+        <div class="user-menu">
+            <a href="#" onclick="document.getElementById('profile-modal').style.display='flex'" class="edit-profile-btn">👤 Modifica Profilo</a>
+            <img src="<%= user.avatarUrl || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150' %>" alt="User Avatar" class="header-avatar" onerror="this.src='https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150'">
+            <a href="/logout" class="logout-btn">Logout</a>
         </div>
     </header>
 
-    <main class="dashboard-grid">
-        <aside class="panel owner-panel">
-            <h2>OWNER PANEL</h2>
-            <div class="user-info">
-                <img src="<%= avatarUrl %>" alt="Owner Avatar" class="owner-avatar">
-                <span><%= user.username %> <%= user.isOwner ? '(👑 OWNER)' : '' %></span>
-            </div>
-            
+    <div class="dashboard-grid">
+        
+        <!-- COLONNA SINISTRA (SOLO OWNER) -->
+        <aside class="left-sidebar">
             <% if (user.isOwner) { %>
-                <div class="anime-selta card">
-                    <h3>SETTA ANIME SETTIMANALE</h3>
-                    <p style="font-size:0.8rem; color:gray;">Cerca su MyAnimeList:</p>
-                    <input type="text" id="mal-search" placeholder="Scrivi almeno 3 lettere...">
-                    <div id="mal-results" style="background: rgba(0,0,0,0.5); border-radius:5px;"></div>
-
-                    <form action="/set-anime" method="POST" id="anime-form" style="margin-top:15px; display:none;">
-                        <p>Selezionato: <strong id="selected-title-display" style="color:var(--neon-cyan);"></strong></p>
-                        <input type="hidden" name="anime_title" id="form-anime-title">
-                        <input type="hidden" name="anime_image_url" id="form-anime-image">
-                        <button type="submit" class="btn btn-primary">ATTIVA QUESTA SESSIONE</button>
-                    </form>
-
-                    <% if (activeSession) { %>
-                        <div style="margin-top:20px; text-align:center;">
-                            <p>In corso:</p>
-                            <img src="<%= activeSession.anime_image_url %>" class="anime-poster">
-                            <h4><%= activeSession.anime_title %></h4>
-                        </div>
-                    <% } %>
+                <div class="panel owner-panel">
+                    <h2>OWNER PANEL</h2>
+                    <div class="owner-identity">
+                        <img src="<%= user.avatarUrl || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150' %>" class="header-avatar" onerror="this.src='https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150'">
+                        <span><%= user.username %> (👑 OWNER)</span>
+                    </div>
                 </div>
 
-                <div class="pass-turn card">
-                    <h3>PASSA CORONA OWNER</h3>
-                    <form action="/pass-owner" method="POST">
-                        <select name="new_owner_id">
-                            <% otherUsers.forEach(u => { %>
-                                <option value="<%= u.id %>"><%= u.username %></option>
-                            <% }) %>
-                        </select>
-                        <button type="submit" class="btn btn-warning">PASSA TURNO</button>
+                <div class="panel">
+                    <h3>SETTA ANIME SETTIMANALE</h3>
+                    <form action="/session/start" method="POST" class="neon-form">
+                        <label>Cerca su MyAnimeList:</label>
+                        <input type="text" id="anime-search" placeholder="Scrivi almeno 3 lettere..." autocomplete="off">
+                        <ul id="search-results" class="autocomplete-results"></ul>
+                        
+                        <input type="hidden" name="anime_title" id="hidden-title">
+                        <input type="hidden" name="anime_image_url" id="hidden-image">
+                        
+                        <div id="selected-anime-preview" class="preview-box">
+                            <p>In corso:</p>
+                            <img id="preview-image" src="<%= activeSession ? activeSession.anime_image_url : '' %>" onerror="this.style.display='none'">
+                            <h4 id="preview-title"><%= activeSession ? activeSession.anime_title : 'Nessun anime selezionato' %></h4>
+                        </div>
+                        <button type="submit" class="neon-btn primary-btn" id="activate-btn" style="display:none;">ATTIVA QUESTA SESSIONE</button>
                     </form>
                 </div>
             <% } else { %>
-                <div class="membro-status card">
-                    <h3>STATO</h3>
-                    <p>Sei un Membro della serata. Attendi che l'Owner scelga l'anime o avvii la room.</p>
+                <div class="panel">
+                    <h2>Membro Panel</h2>
+                    <p>Attendi che l'Owner imposti la serata.</p>
                 </div>
             <% } %>
         </aside>
 
-        <section class="main-content">
-            <div class="card central-card">
-                <h2>BENVENUTO NELLA NIGHT, <%= user.username %>!</h2>
-                
-                <div class="dashboard-panels">
-                    <div class="panel-section members-section">
-                        <h3>MEMBRI DEL CLUB</h3>
-                        <ul class="members-list">
-                            <% users.forEach(u => { %>
-                                <li class="member-item">
-                                    <img src="<%= u.avatar_url %>" alt="<%= u.username %>" class="member-avatar" style="width:35px; height:35px; border-radius:50%;">
-                                    <span><%= u.username %> <%= u.is_owner ? '👑' : '' %></span>
-                                </li>
+        <!-- COLONNA CENTRALE -->
+        <main class="main-content">
+            <h2 class="welcome-text">BENVENUTO NELLA NIGHT, <%= user.username %>!</h2>
+
+            <div class="content-split">
+                <!-- MEMBRI -->
+                <div class="panel members-panel">
+                    <h3>MEMBRI DEL CLUB</h3>
+                    <div class="members-list">
+                        <% users.forEach(u => { %>
+                            <div class="member-item">
+                                <img src="<%= u.avatar_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150' %>" alt="<%= u.username %>" class="member-avatar" style="width:40px; height:40px; border-radius:50%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150'">
+                                <span class="member-name <%= u.is_owner ? 'owner-name' : '' %>">
+                                    <%= u.username %> <%= u.is_owner ? '👑' : '' %>
+                                </span>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+
+                <!-- CLASSIFICHE -->
+                <div class="panel leaderboard-panel">
+                    <h3 style="color: #ff0055; margin-bottom: 15px;">🏆 CLASSIFICA GLOBALE</h3>
+                    <div class="leaderboard-list">
+                        <% if (totalLeaderboard.length > 0) { %>
+                            <% totalLeaderboard.forEach((u, index) => { %>
+                                <div class="leaderboard-item">
+                                    <span class="rank-number"><%= index + 1 %></span>
+                                    <img src="<%= u.avatar_url || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150' %>" class="member-avatar" style="width:35px; height:35px; border-radius:50%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150'">
+                                    <span class="username" style="color: <%= index === 0 ? '#ffcc00' : '#fff' %>"><%= u.username %></span>
+                                    <span class="score-badge"><%= u.total_score %> pt</span>
+                                </div>
                             <% }) %>
-                        </ul>
+                        <% } else { %>
+                            <p style="color: #888;">Nessun punto accumulato finora.</p>
+                        <% } %>
                     </div>
 
-                    <div class="panel-section results-section">
-                        <h3>CLASSIFICA ULTIMI QUIZ</h3>
-                        <ul class="results-list">
-                            <% quizResults.forEach(result => { %>
-                                <li class="result-item">
-                                    <img src="<%= result.avatar_url %>" class="result-avatar" style="width:30px; height:30px; border-radius:50%;">
-                                    <span><strong><%= result.username %></strong></span>
-                                    <span class="score" style="margin-left:auto;"><%= result.score %> / 10 Pti</span>
-                                    <span class="rating" style="color:var(--neon-yellow); margin-left:10px;"><%= result.rating %> ⭐</span>
-                                </li>
-                            <% }) %>
-                        </ul>
+                    <hr style="border: 1px solid #333; margin: 20px 0;">
+
+                    <h3 style="color: #00f0ff; margin-bottom: 15px;">📺 CLASSIFICHE PER ANIME</h3>
+                    <div class="leaderboards-anime">
+                        <% if (Object.keys(leaderboardsByAnime).length > 0) { %>
+                            <% for (const anime in leaderboardsByAnime) { %>
+                                <div class="anime-leaderboard-group" style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                                    <h4 style="border-left: 3px solid #00f0ff; padding-left: 10px; margin-bottom: 10px; font-size: 1em;"><%= anime %></h4>
+                                    <% leaderboardsByAnime[anime].forEach((u, index) => { %>
+                                        <div class="leaderboard-item" style="padding: 5px 0; background: none; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                            <span class="rank-number" style="font-size: 0.9em; width: 15px;"><%= index + 1 %></span>
+                                            <span class="username" style="font-size: 0.9em; margin-left:10px;"><%= u.username %></span>
+                                            <span class="score-badge" style="font-size: 0.8em; padding: 2px 6px;"><%= u.score %> pt</span>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                        <% } else { %>
+                            <p style="color: #888;">Nessun quiz per anime singolo.</p>
+                        <% } %>
                     </div>
                 </div>
             </div>
-        </section>
+        </main>
 
-        <aside class="panel member-panel">
-            <h2>MEMBER PANEL</h2>
-            
-            <% if (activeSession) { %>
-                <div class="current-quiz card" style="text-align:center;">
-                    <h3>SESSIONE ATTIVA</h3>
-                    <img src="<%= activeSession.anime_image_url %>" class="anime-poster">
-                    <h4><%= activeSession.anime_title %></h4>
-
-                    <div class="generate-quiz-form" style="margin-top:20px; text-align:left;">
-                        <h4 style="color:var(--neon-pink);">GENERA IL TUO QUIZ IA</h4>
+        <!-- COLONNA DESTRA -->
+        <aside class="right-sidebar">
+            <div class="panel active-session-panel">
+                <h3>SESSIONE ATTIVA</h3>
+                <% if (activeSession) { %>
+                    <div class="active-poster-container">
+                        <img src="<%= activeSession.anime_image_url %>" alt="Poster" class="active-poster" onerror="this.src='https://via.placeholder.com/250x350?text=Nessuna+Immagine'">
+                    </div>
+                    <h2 class="active-title"><%= activeSession.anime_title %></h2>
+                    
+                    <div class="quiz-generation-area">
+                        <h4 style="color: #ff0055; margin-bottom: 10px;">GENERA IL TUO QUIZ IA</h4>
                         <form action="/generate-quiz" method="POST">
-                            <input type="hidden" name="session_id" value="<%= activeSession.id %>">
                             <input type="hidden" name="anime_title" value="<%= activeSession.anime_title %>">
-                            
-                            <label for="episodes">Fino a quale episodio hai visto?</label>
-                            <input type="number" name="episodes" id="episodes" min="1" default="1" required style="width:90%;">
-                            
-                            <button type="submit" class="btn btn-warning" style="margin-top:10px;">GENERA DOMANDE</button>
+                            <input type="hidden" name="session_id" value="<%= activeSession.id %>">
+                            <label>Fino a quale episodio hai visto?</label>
+                            <input type="number" name="episodes" min="1" required class="neon-input" style="width:100%; margin-bottom:10px;">
+                            <button type="submit" class="neon-btn secondary-btn" style="width:100%;">GENERA DOMANDE</button>
                         </form>
                     </div>
-                </div>
-            <% } else { %>
-                <div class="card">
-                    <h3>NESSUNA SERATA ATTIVA</h3>
-                    <p>L'owner non ha ancora selezionato l'anime della settimana.</p>
-                </div>
-            <% } %>
+                <% } else { %>
+                    <p class="waiting-text">In attesa dell'Owner...</p>
+                <% } %>
+            </div>
         </aside>
-    </main>
+    </div>
+
+    <!-- MODALE PROFILO -->
+    <div id="profile-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content panel">
+            <h3>Modifica Profilo</h3>
+            <form action="/profile/update" method="POST">
+                <label>URL Immagine Profilo:</label>
+                <input type="text" name="avatar_url" class="neon-input" placeholder="https://...immagine.jpg" value="<%= user.avatarUrl || '' %>" required>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button type="submit" class="neon-btn primary-btn">Salva Modifiche</button>
+                    <button type="button" class="neon-btn" onclick="document.getElementById('profile-modal').style.display='none'">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
-        const searchInput = document.getElementById('mal-search');
-        const resultsDiv = document.getElementById('mal-results');
-        const animeForm = document.getElementById('anime-form');
-        const formTitle = document.getElementById('form-anime-title');
-        const formImage = document.getElementById('form-anime-image');
-        const displayTitle = document.getElementById('selected-title-display');
+        // Logica per l'autocompletamento MyAnimeList
+        const searchInput = document.getElementById('anime-search');
+        const resultsList = document.getElementById('search-results');
+        const previewImage = document.getElementById('preview-image');
+        const previewTitle = document.getElementById('preview-title');
+        const hiddenTitle = document.getElementById('hidden-title');
+        const hiddenImage = document.getElementById('hidden-image');
+        const activateBtn = document.getElementById('activate-btn');
 
         if(searchInput) {
-            searchInput.addEventListener('input', async (e) => {
-                const val = e.target.value;
-                if(val.length < 3) { resultsDiv.innerHTML = ''; return; }
-
-                const res = await fetch(`/api/search-anime?q=${encodeURIComponent(val)}`);
-                const items = await res.json();
-
-                resultsDiv.innerHTML = '';
-                items.forEach(item => {
-                    const div = document.createElement('div');
-                    div.style.padding = '8px';
-                    div.style.cursor = 'pointer';
-                    div.style.borderBottom = '1px solid #333';
-                    div.innerHTML = `<img src="${item.image_url}" style="width:30px; vertical-align:middle; margin-right:10px;"> ${item.title}`;
-                    
-                    div.addEventListener('click', () => {
-                        formTitle.value = item.title;
-                        formImage.value = item.image_url;
-                        displayTitle.innerText = item.title;
-                        animeForm.style.display = 'block';
-                        resultsDiv.innerHTML = '';
-                        searchInput.value = '';
+            let timeout = null;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(timeout);
+                const query = e.target.value;
+                if (query.length < 3) { resultsList.innerHTML = ''; return; }
+                
+                timeout = setTimeout(async () => {
+                    const res = await fetch(`/api/search-anime?q=${query}`);
+                    const animes = await res.json();
+                    resultsList.innerHTML = '';
+                    animes.forEach(anime => {
+                        const li = document.createElement('li');
+                        li.textContent = anime.title;
+                        li.onclick = () => {
+                            previewImage.src = anime.image_url;
+                            previewImage.style.display = 'block';
+                            previewTitle.textContent = anime.title;
+                            hiddenTitle.value = anime.title;
+                            hiddenImage.value = anime.image_url;
+                            activateBtn.style.display = 'block';
+                            resultsList.innerHTML = '';
+                            searchInput.value = '';
+                        };
+                        resultsList.appendChild(li);
                     });
-                    resultsDiv.appendChild(div);
-                });
+                }, 500);
             });
         }
     </script>
