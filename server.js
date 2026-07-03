@@ -58,11 +58,14 @@ app.get("/profile", requireAuth, async (req, res) => {
 });
 
 app.post("/profile/update", requireAuth, async (req, res) => {
-  const { avatar_url } = req.body;
-  await turso.execute({
-    sql: "UPDATE users SET avatar_url = ? WHERE id = ?",
-    args: [avatar_url, req.session.userId]
+  const newAvatar = req.body.avatar_url;
+  await turso.execute({ 
+    sql: "UPDATE users SET avatar_url = ? WHERE id = ?", 
+    args: [newAvatar, req.session.userId] 
   });
+  
+  // Aggiorna la sessione immediatamente
+  req.session.avatarUrl = newAvatar;
   res.redirect("/dashboard");
 });
 
