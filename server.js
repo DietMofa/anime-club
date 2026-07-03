@@ -37,7 +37,13 @@ app.get("/login", (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const user = (await turso.execute({ sql: "SELECT * FROM users WHERE username = ?", args: [req.body.username] })).rows[0];
+    const username = req.body.username || "";
+    const result = await turso.execute({ 
+      sql: "SELECT * FROM users WHERE username = ?", 
+      args: [username] 
+    });
+    const user = result.rows[0];
+
     if (user && await bcrypt.compare(req.body.password, user.password)) {
       req.session.userId = user.id;
       req.session.isOwner = user.is_owner;
@@ -48,8 +54,9 @@ app.post("/login", async (req, res) => {
       res.send("Credenziali errate. <a href='/login'>Riprova qui</a>");
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Errore durante il login.");
+    console.error("Errore critico durante il login:", error);
+    // MODIFICA DIAGNOSTICA: Mostra l'errore reale nel browser così capiamo cos'ha Turso
+    res.status(500).send(`❌ ERRORE DATABASE DURANTE IL LOGIN: ${error.message}`);
   }
 });
 
@@ -61,7 +68,7 @@ app.get("/logout", (req, res) => {
 
 
 // ==========================================
-// 2. ROTTA DASHBOARD (ISOLATA E ANTI-CRASH)
+// 2. ROTTA DASHBOARD (ANTI-CRASH)
 // ==========================================
 app.get("/dashboard", requireAuth, async (req, res) => {
   let activeSession = null;
@@ -69,7 +76,6 @@ app.get("/dashboard", requireAuth, async (req, res) => {
   let totalLeaderboard = [];
   let leaderboardsByAnime = {};
 
-  // 1. DATI VITALI (Se questi falliscono diamo errore, ma sono query sicure)
   try {
     const sessionData = await turso.execute("SELECT * FROM sessions WHERE active = 1 ORDER BY id DESC LIMIT 1");
     activeSession = sessionData.rows[0];
@@ -83,10 +89,9 @@ app.get("/dashboard", requireAuth, async (req, res) => {
     }
   } catch (err) {
     console.error("Errore database dati vitali:", err);
-    return res.status(500).send("Errore critico nel database delle sessioni.");
+    return res.status(500).send(`Errore critico dati vitali: ${err.message}`);
   }
 
-  // 2. CLASSIFICA GLOBALE (Isolata: se fallisce o è vuota, non rompe la pagina)
   try {
     const totalLeaderboardResult = await turso.execute(`
       SELECT u.username, u.avatar_url, SUM(q.score) as total_score
@@ -98,10 +103,9 @@ app.get("/dashboard", requireAuth, async (req, res) => {
     `);
     totalLeaderboard = totalLeaderboardResult.rows;
   } catch (err) {
-    console.warn("⚠️ Classifica globale non ancora disponibile (tabella vuota o nuova):", err.message);
+    console.warn("⚠️ Classifica globale non ancora disponibile:", err.message);
   }
 
-  // 3. CLASSIFICA PER ANIME (Isolata: se fallisce o è vuota, non rompe la pagina)
   try {
     const animeLeaderboardResult = await turso.execute(`
       SELECT s.anime_title, u.username, u.avatar_url, SUM(q.score) as score
@@ -121,7 +125,6 @@ app.get("/dashboard", requireAuth, async (req, res) => {
     console.warn("⚠️ Classifica anime non ancora disponibile:", err.message);
   }
 
-  // 4. MOSTRA LA PAGINA IN OGNI CASO
   res.render("dashboard", {
     user: req.session,
     avatarUrl: req.session.avatarUrl || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150',
@@ -209,7 +212,7 @@ app.post("/submit-quiz", requireAuth, async (req, res) => {
     res.redirect("/dashboard");
   } catch (error) {
     console.error("Errore salvataggio punteggio:", error);
-    res.redirect("/dashboard"); // Torna in dashboard comunque per non bloccare l'utente
+    res.redirect("/dashboard");
   }
 });
 
