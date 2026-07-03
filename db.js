@@ -3,9 +3,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Adesso legge esattamente le tue variabili: TURSO_URL e TURSO_TOKEN
 export const turso = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
+  url: process.env.TURSO_URL,
+  authToken: process.env.TURSO_TOKEN,
 });
 
 export async function initDB() {
@@ -32,7 +33,7 @@ export async function initDB() {
       );
     `);
 
-    // 3. TABELLA QUIZ E PUNTEGGI (Correlata alle altre due)
+    // 3. TABELLA QUIZ E PUNTEGGI
     await turso.execute(`
       CREATE TABLE IF NOT EXISTS quizzes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
