@@ -101,7 +101,7 @@ app.get("/dashboard", requireAuth, async (req, res) => {
       JOIN users u ON q.user_id = u.id
       JOIN sessions s ON q.session_id = s.id
       WHERE q.completed_at IS NOT NULL
-      GROUP s.anime_title, u.id
+      GROUP BY s.anime_title, u.id, u.username, u.avatar_url
       ORDER BY s.anime_title ASC, score DESC
     `);
     
