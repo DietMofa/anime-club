@@ -3,10 +3,18 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Adesso legge esattamente le tue variabili: TURSO_URL e TURSO_TOKEN
+// Il codice ora cerca entrambe le versioni dei nomi che abbiamo usato finora
+const dbUrl = process.env.TURSO_URL || process.env.TURSO_DATABASE_URL;
+const dbToken = process.env.TURSO_TOKEN || process.env.TURSO_AUTH_TOKEN;
+
+// Controllo di sicurezza: se il token è vuoto, lo segnala subito nei log di Render
+if (!dbToken) {
+    console.error("🚨 ALLARME CRITICO: Il Server non riesce a leggere il token di Turso dalle variabili di Render!");
+}
+
 export const turso = createClient({
-  url: process.env.TURSO_URL,
-  authToken: process.env.TURSO_TOKEN,
+  url: dbUrl,
+  authToken: dbToken,
 });
 
 export async function initDB() {
@@ -46,7 +54,7 @@ export async function initDB() {
       );
     `);
 
-    console.log("📂 Database allineato e coerente al 100%!");
+    console.log("📂 Database allineato e connesso con successo!");
   } catch (error) {
     console.error("❌ Errore inizializzazione DB:", error);
   }
