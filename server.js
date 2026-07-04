@@ -24,13 +24,52 @@ const requireAuth = (req, res, next) => {
 };
 
 // ==========================================
-// 1. ROTTE DI BASE E AUTENTICAZIONE
+// 1. ROTTE DI BASE, REGISTRAZIONE E LOGIN
 // ==========================================
 
 app.get("/", (req, res) => {
   res.redirect("/dashboard");
 });
 
+// --- REGISTRAZIONE ---
+app.get("/register", (req, res) => {
+  res.render("register");
+});
+
+app.post("/register", async (req, res) => {
+  try {
+    const { username, password, is_owner } = req.body;
+
+    // Controllo se l'utente esiste già
+    const existingUser = await turso.execute({
+      sql: "SELECT * FROM users WHERE username = ?",
+      args: [username]
+    });
+    
+    if (existingUser.rows.length > 0) {
+      return res.send("Questo username è già in uso. <a href='/register'>Riprova</a>");
+    }
+
+    // Cripta la password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Gestione Owner / Member (legge dalla checkbox o dal select del form)
+    const isOwnerFlag = (is_owner === 'on' || is_owner === '1' || is_owner === 'true') ? 1 : 0;
+
+    // Salva il nuovo utente nel Database
+    await turso.execute({
+      sql: "INSERT INTO users (username, password, is_owner) VALUES (?, ?, ?)",
+      args: [username, hashedPassword, isOwnerFlag]
+    });
+
+    res.redirect("/login");
+  } catch (error) {
+    console.error("Errore durante la registrazione:", error);
+    res.status(500).send(`❌ ERRORE DATABASE DURANTE LA REGISTRAZIONE: ${error.message}`);
+  }
+});
+
+// --- LOGIN ---
 app.get("/login", (req, res) => {
   res.render("login"); 
 });
@@ -55,7 +94,6 @@ app.post("/login", async (req, res) => {
     }
   } catch (error) {
     console.error("Errore critico durante il login:", error);
-    // MODIFICA DIAGNOSTICA: Mostra l'errore reale nel browser così capiamo cos'ha Turso
     res.status(500).send(`❌ ERRORE DATABASE DURANTE IL LOGIN: ${error.message}`);
   }
 });
@@ -138,7 +176,7 @@ app.get("/dashboard", requireAuth, async (req, res) => {
 
 
 // ==========================================
-// 3. API & LOGICA FUNZIONALE
+// 3. API E IMPOSTAZIONI
 // ==========================================
 
 app.get("/api/search-anime", requireAuth, async (req, res) => {
