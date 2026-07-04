@@ -3,92 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz: <%= quiz.anime_title %></title>
+    <title>Anime Night Club - Quiz Time!</title>
     <link rel="stylesheet" href="/style.css">
     <style>
-        body { padding: 40px; background-color: var(--bg-dark); }
-        .quiz-container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            background: var(--bg-panel); 
-            padding: 40px; 
-            border-radius: 10px; 
-            border: 1px solid var(--neon-purple); 
-            box-shadow: 0 0 20px var(--neon-purple); 
+        /* Aggiunte specifiche per l'impaginazione del quiz */
+        .quiz-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
         }
-        .question-block { 
-            margin-bottom: 25px; 
-            background: rgba(255, 255, 255, 0.05); 
-            padding: 20px; 
-            border-radius: 8px; 
-            border-left: 4px solid var(--neon-cyan); 
+        .question-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #00f0ff;
+            transition: all 0.3s;
         }
-        .question-title { color: var(--neon-cyan); margin-top: 0; font-size: 1.2rem; }
-        label { 
-            display: block; 
-            margin-bottom: 10px; 
-            cursor: pointer; 
-            padding: 10px; 
-            background: rgba(0,0,0,0.2); 
-            border-radius: 5px; 
-            transition: background 0.3s; 
+        .question-box:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #ff0055;
         }
-        label:hover { background: rgba(0, 188, 212, 0.2); }
-        input[type="radio"] { width: auto; margin-right: 10px; accent-color: var(--neon-cyan); }
-        
-        .rating-block { 
-            text-align: center; 
-            margin-top: 40px; 
-            padding-top: 30px; 
-            border-top: 1px solid rgba(255,255,255,0.1); 
+        .question-box h4 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #e0e0ff;
         }
-        .rating-block input[type="number"] { 
-            width: 120px; 
-            text-align: center; 
-            font-size: 2rem; 
-            margin: 10px auto; 
-            display: block; 
-            font-weight: bold;
-            color: var(--neon-yellow);
+        .options-list {
+            list-style: none;
+        }
+        .options-list li {
+            margin-bottom: 10px;
+        }
+        .options-list label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        .options-list label:hover {
+            background: rgba(0, 240, 255, 0.1);
+        }
+        input[type="radio"] {
+            accent-color: #00f0ff;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
         }
     </style>
 </head>
-<body class="dark-theme">
+<body>
+
+    <!-- NAV BAR SUPERIORE -->
+    <header class="top-nav">
+        <div class="logo-area">
+            <h1><span class="kanji">アニメ</span> ANIME NIGHT CLUB <span class="kanji">夜夜</span></h1>
+        </div>
+        <div class="user-menu">
+            <a href="/dashboard" class="neon-btn secondary-btn" style="text-decoration:none;">⬅ Abbandona Quiz</a>
+        </div>
+    </header>
+
+    <!-- CONTENITORE CENTRALE -->
     <div class="quiz-container">
-        <h1 style="text-align: center; color: var(--neon-purple); text-shadow: 0 0 10px var(--neon-purple);">
-            QUIZ UFFICIALE
-        </h1>
-        <h3 style="text-align: center; margin-bottom: 30px;">
-            <%= quiz.anime_title %> <br>
-            <span style="font-size: 0.9em; color: gray;">(Analisi IA fino all'episodio <%= quiz.episodes %>)</span>
-        </h3>
+        <div class="panel">
+            <h2 style="color: #00f0ff; margin-bottom: 5px; font-size: 2rem; text-align: center;">QUIZ: <%= quiz.anime_title %></h2>
+            <p style="color: #888; margin-bottom: 30px; text-align: center;">Scegli la risposta corretta per guadagnare punti in classifica!</p>
 
-        <form action="/submit-quiz" method="POST">
-            <!-- Cicla le domande generate dall'IA -->
-            <% quiz.data.forEach((q, index) => { %>
-                <div class="question-block">
-                    <h4 class="question-title"><%= index + 1 %>. <%= q.question %></h4>
-                    <% q.options.forEach(opt => { %>
-                        <label>
-                            <!-- L'IA inserisce sempre l'opzione come stringa -->
-                            <input type="radio" name="answers[<%= index %>]" value="<%= opt %>" required>
-                            <%= opt %>
-                        </label>
+            <form id="quiz-form" action="/submit-quiz" method="POST">
+                <input type="hidden" name="session_id" value="<%= quiz.session_id %>">
+                <input type="hidden" name="score" id="final-score" value="0">
+
+                <!-- CONTROLLO STRUTTURA IA -->
+                <% if (quiz.data && Array.isArray(quiz.data)) { %>
+                    
+                    <!-- CICLO DELLE DOMANDE -->
+                    <% quiz.data.forEach((q, i) => { %>
+                        <div class="question-box" data-correct="<%= q.correct_answer || q.correctAnswer || q.correct %>">
+                            <h4>Domanda <%= i + 1 %>: <%= q.question %></h4>
+                            <ul class="options-list">
+                                <% if (q.options && Array.isArray(q.options)) { %>
+                                    <% q.options.forEach((opt, j) => { %>
+                                        <li>
+                                            <label>
+                                                <!-- required obbliga l'utente a rispondere a tutto prima di inviare -->
+                                                <input type="radio" name="question_<%= i %>" value="<%= opt %>" required>
+                                                <%= opt %>
+                                            </label>
+                                        </li>
+                                    <% }) %>
+                                <% } %>
+                            </ul>
+                        </div>
                     <% }) %>
-                </div>
-            <% }) %>
 
-            <!-- Sezione Voto a Stelle -->
-            <div class="rating-block">
-                <h3 style="color: var(--neon-yellow); text-shadow: 0 0 5px var(--neon-yellow);">IL TUO VOTO (0 - 5)</h3>
-                <p style="font-size: 0.9rem; color: gray;">Che voto dai all'anime fino ad ora?</p>
-                <input type="number" name="rating" min="0" max="5" step="1" required placeholder="5">
-                
-                <button type="submit" class="btn btn-primary" style="margin-top: 30px; font-size: 1.2rem; padding: 15px;">
-                    INVIA RISPOSTE E VOTO
-                </button>
-            </div>
-        </form>
+                <% } else { %>
+                    <div class="question-box" style="border-left-color: #ff0055;">
+                        <h4>Errore Generazione</h4>
+                        <p style="color: #ff0055;">L'IA non ha formattato il quiz correttamente. Riprova a generarlo dalla Dashboard.</p>
+                    </div>
+                <% } %>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button type="submit" class="neon-btn primary-btn" style="width: 100%; max-width: 400px; font-size: 1.2rem; padding: 15px;">
+                        INVIA RISPOSTE 🚀
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+
+    <!-- SCRIPT PER CALCOLARE IL PUNTEGGIO AUTOMATICAMENTE -->
+    <script>
+        document.getElementById('quiz-form').addEventListener('submit', function(e) {
+            let score = 0;
+            const questions = document.querySelectorAll('.question-box');
+            
+            // Controlla ogni domanda
+            questions.forEach((qBox, index) => {
+                const correctAnswer = qBox.getAttribute('data-correct');
+                const selectedRadio = document.querySelector(`input[name="question_${index}"]:checked`);
+                
+                // Se la risposta è giusta (paragonata come stringa), diamo 10 PUNTI!
+                if (selectedRadio && selectedRadio.value.trim() === String(correctAnswer).trim()) {
+                    score += 10;
+                }
+            });
+
+            // Imposta il punteggio totale nel campo nascosto prima che il form parta verso il server
+            document.getElementById('final-score').value = score;
+        });
+    </script>
 </body>
 </html>
